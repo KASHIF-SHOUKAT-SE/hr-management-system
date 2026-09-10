@@ -1,4 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# HR Management System
+
+Shared starter repository for an HR management system built with Next.js App Router and TypeScript.
+
+## Quick start
+
+```bash
+npm install
+copy .env.example .env.local
+npm run dev
+```
+
+Open http://localhost:3000. The dashboard is at `/dashboard`.
+
+## Structure
+
+- `app/(auth)` contains login and password recovery routes.
+- `app/(dashboard)` contains product routes and the shared dashboard layout.
+- `app/api` contains starter API routes for auth, employees, departments, attendance, and leaves.
+- `components` contains reusable UI, layout, form, grid, and common components.
+- `features` is organized by domain for Redux and RTK Query work.
+- `server` is reserved for database connections, models, and JWT verification.
+- `services`, `types`, `lib`, `hooks`, `schemas`, and `config` contain shared contracts.
+
+The API, database, authentication, Redux, form, and AG Grid files are intentionally starter contracts. Implement each domain in its matching `features/<domain>` folder and connect it through the existing service/API boundaries.
+
+## Checks
+
+```bash
+npm run lint
+npm run build
+```
 
 ## Getting Started
 

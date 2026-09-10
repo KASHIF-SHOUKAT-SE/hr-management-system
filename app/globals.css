@@ -1,26 +1,49 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #f5f1e8;
+  --foreground: #1f2a2a;
+  --muted: #68716d;
+  --accent: #e56b4e;
+  --line: #d9d2c5;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: Georgia, "Times New Roman", serif;
+  margin: 0;
 }
+
+a { color: inherit; text-decoration: none; }
+
+.landing-page {
+  display: grid;
+  min-height: 100vh;
+  place-content: center;
+  gap: 1.25rem;
+  max-width: 48rem;
+  margin: auto;
+  padding: 2rem;
+}
+
+.eyebrow { color: var(--accent); font: 700 0.8rem/1.2 Arial, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; }
+h1 { font-size: clamp(2.75rem, 7vw, 6rem); line-height: 0.98; margin: 0; max-width: 10ch; }
+.lede { color: var(--muted); font: 1.1rem/1.6 Arial, sans-serif; max-width: 38rem; }
+.button { background: var(--foreground); color: var(--background); display: inline-block; font: 700 0.95rem Arial, sans-serif; padding: 0.9rem 1.2rem; width: fit-content; }
+.button:hover { background: var(--accent); }
+
+.dashboard-shell { display: grid; grid-template-columns: 15rem 1fr; min-height: 100vh; }
+.sidebar { background: var(--foreground); color: var(--background); padding: 1.5rem; }
+.brand { font-size: 1.35rem; font-weight: 700; margin-bottom: 2rem; }
+.nav { display: grid; gap: 0.45rem; font: 0.9rem Arial, sans-serif; }
+.nav a { padding: 0.65rem 0.75rem; }
+.nav a:hover, .nav a[aria-current="page"] { background: var(--accent); }
+.dashboard-content { padding: 2rem; }
+.page-header { border-bottom: 1px solid var(--line); margin-bottom: 2rem; padding-bottom: 1rem; }
+.page-header h1 { font-size: 2.5rem; max-width: none; }
+.page-header p, .placeholder { color: var(--muted); font: 1rem/1.5 Arial, sans-serif; }
+.stat-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); }
+.stat { border: 1px solid var(--line); padding: 1.25rem; }
+.stat strong { display: block; font-size: 2rem; margin-top: 0.5rem; }
+@media (max-width: 700px) { .dashboard-shell { grid-template-columns: 1fr; } .sidebar { padding: 1rem; } .nav { grid-template-columns: repeat(2, 1fr); } .dashboard-content { padding: 1rem; } }
