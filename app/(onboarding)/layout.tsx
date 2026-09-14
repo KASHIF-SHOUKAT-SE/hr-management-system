@@ -1,16 +1,7 @@
-import ReduxProvider from "@/store/provider";
-// ... baki imports
-
-export default function RootLayout({
+export default function OnboardingLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <html lang="en">
-      <body>
-        <ReduxProvider>{children}</ReduxProvider>
-      </body>
-    </html>
-  );
+  return <>{children}</>;
 }

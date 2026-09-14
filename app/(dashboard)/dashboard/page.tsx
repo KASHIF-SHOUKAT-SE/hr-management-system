@@ -1,7 +1,25 @@
-import { PageHeader } from "@/components/common/PageHeader";
-
-const stats = [["Employees", "248"], ["Present today", "231"], ["Pending leave", "12"], ["Departments", "8"]];
+import { GreetingHeader } from "@/components/dashboard/GreetingHeader";
+import { StatCardGrid } from "@/components/dashboard/StatCardGrid";
+import { TeamPerformanceChart } from "@/components/dashboard/TeamPerformanceChart";
+import { EmployeeTableCard } from "@/components/dashboard/EmployeeTableCard";
+import { TotalEmployeeChart } from "@/components/dashboard/TotalEmployeeChart";
 
 export default function DashboardPage() {
-  return <><PageHeader title="Dashboard" description="A quick view of your people operations." /><div className="stat-grid">{stats.map(([label, value]) => <article className="stat" key={label}><span>{label}</span><strong>{value}</strong></article>)}</div></>;
+  return (
+    <div className="mx-auto max-w-[1400px]">
+      <GreetingHeader />
+
+      {/* Row 1: Stats + Performance Chart */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_1.1fr]">
+        <StatCardGrid />
+        <TeamPerformanceChart />
+      </div>
+
+      {/* Row 2: Employees Table + Total Employee Donut */}
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
+        <EmployeeTableCard />
+        <TotalEmployeeChart />
+      </div>
+    </div>
+  );
 }

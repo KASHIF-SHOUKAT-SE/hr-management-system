@@ -86,7 +86,7 @@ password      -> password input ki current value
 showPassword  -> password text dikhe ya dots, ye control karta hai
 ```
 
-Ye values sirf browser ke current React component memory mein hoti hain. Abhi ye Redux, database, API, cookie ya localStorage mein save nahi hotin.
+Typing ke waqt ye values browser ke current React component memory mein hoti hain. Submit hone par email/password `POST /api/auth/login` ko JSON body mein bheje jate hain; password browser ya localStorage mein save nahi hota.
 
 ### Login button press karne par kya hota hai?
 
@@ -94,25 +94,18 @@ Form `handleLogin` function chalata hai:
 
 1. Browser ka default form submit roka jata hai.
 2. Check hota hai ke email aur password empty to nahi.
-3. Agar empty hon to alert aata hai: `Please enter your email and password.`
-4. Agar dono filled hon to form fields clear ho jate hain.
-5. `Login successfully!` alert show hota hai.
+3. Agar empty hon to form ke upar error message dikhaya jata hai.
+4. Filled form `fetch("/api/auth/login")` se backend ko bheja jata hai.
+5. Success par backend JWT ko `HttpOnly` `token` cookie mein set karta hai aur browser `/dashboard` par redirect hota hai.
+6. Ghalat credentials ya server error par screen par error message dikhata hai.
 
-Important baat: current code mein login button API ko call nahi karta. Email registered hai ya nahi, password sahi hai ya nahi, ye check abhi nahi hota. Successful alert ke baad bhi current code dashboard ya company-info par redirect nahi karta.
+Backend email ko lowercase karke MongoDB ke `User` collection mein dhoondta hai. `bcrypt.compare` hashed password verify karta hai; successful login ke baad token 7 din ke liye cookie mein rehta hai.
 
 ### Login se related backend file
 
 ### [app/api/auth/login/route.ts](app/api/auth/login/route.ts)
 
-Ye browser screen nahi hai. Is ka intended URL `/api/auth/login` hai. Future mein login page yahan email/password bhej sakti hai.
-
-Abhi is file ka POST function sirf HTTP `501` response deta hai:
-
-```text
-Login endpoint ready for implementation.
-```
-
-Yani login page aur login API abhi connected nahi hain.
+Ye browser screen nahi hai. Is ka URL `POST /api/auth/login` hai. Ye MongoDB connect karta hai, credentials verify karta hai, JWT banata hai aur `token` cookie response ke saath browser ko bhejta hai.
 
 ## 4. Register screen ka complete flow
 
@@ -152,23 +145,23 @@ password      -> user ka password
 showPassword  -> password visible hai ya hidden
 ```
 
-Ye bhi sirf current page ki temporary React state hai. Abhi user database mein save nahi hota.
+Typing ke waqt ye current page state hoti hai. Submit ke baad password `bcrypt.hash` se hash hokar MongoDB ke `User` document mein save hota hai; plain password save nahi hota.
 
 ### Create Account press karne par kya hota hai?
 
 1. Default browser submit roka jata hai.
-2. Name, email aur password empty hain ya nahi check hota hai.
-3. Empty field par validation alert aata hai.
-4. Filled fields par values clear hoti hain.
-5. `Account created successfully!` alert aata hai.
+2. Name, email aur password validate hote hain; password kam az kam 6 characters ka hota hai.
+3. `fetch("/api/auth/register")` name, email aur password backend ko bhejta hai.
+4. Backend duplicate email check karke hashed password ke saath User document create karta hai.
+5. Success par `/login?registered=1` open hota hai aur login screen success message dikhati hai.
 
-Current code account create nahi karta aur login page ko actual registered credentials nahi deta.
+Duplicate email par HTTP `409`, invalid input par `400`, aur unexpected server/database problem par `500` response milta hai. Screen in messages ko form ke andar dikhati hai.
 
 ### Register se related backend file
 
 ### [app/api/auth/register/route.ts](app/api/auth/register/route.ts)
 
-Is ka intended kaam name, email aur password receive karke user banana hai. Abhi POST function HTTP `501` placeholder response deta hai. Is liye register page bhi is API ko call nahi kar rahi.
+Is ka URL `POST /api/auth/register` hai. Ye `connectDatabase()` ke zariye MongoDB se connect hota hai, `User` model se duplicate email check karta hai, password hash karta hai aur naya record create karta hai.
 
 ## 5. Onboarding ka matlab kya hai?
 
@@ -437,6 +430,43 @@ Ye numbers current code mein hard-coded hain. API ya database se nahi aa rahe.
 
 `/employees` par employee records ka future module placeholder hai. Ye `ModulePage` import karta hai.
 
+### Add New button ka real flow (sidebar open hona)
+
+Employee list page par Add New button as a real UI action work karta hai. Is flow ka code exact yahan hai:
+
+1. [components/employees/EmployeePageHeader.tsx](components/employees/EmployeePageHeader.tsx) ke Button par `onClick={onAddNew}` laga huwa hai.
+2. [app/(dashboard)/employees/page.tsx](app/(dashboard)/employees/page.tsx) mein state `isEmployeeFormOpen` rakha gaya hai.
+3. `EmployeePageHeader` ko `onAddNew={() => setIsEmployeeFormOpen(true)}` pass kiya jata hai.
+4. Jis waqt state true hota hai, page ke end par [components/forms/EmployeeForm.tsx](components/forms/EmployeeForm.tsx) render hota hai.
+5. EmployeeForm ka UI ek fixed overlay + right-side `aside` hota hai, jo modern drawer/sidebar style mein open hota hai.
+
+Ye code ka summary is tarah hai:
+
+```tsx
+const [isEmployeeFormOpen, setIsEmployeeFormOpen] = useState(false);
+
+<EmployeePageHeader onAddNew={() => setIsEmployeeFormOpen(true)} />
+
+<EmployeeForm
+  isOpen={isEmployeeFormOpen}
+  onClose={() => setIsEmployeeFormOpen(false)}
+/>
+```
+
+Aisa matlab hai ke Add New button click karne se browser URL change nahi hota. Sirf local component state true ho jata hai aur sidebar open ho jata hai. Ye route change nahi, UI state toggle hai.
+
+### [components/forms/EmployeeForm.tsx](components/forms/EmployeeForm.tsx)
+
+Ye actual sidebar card hai. Is file mein:
+
+- `isOpen` prop check karta hai ke form open hai ya nahi.
+- Agar `false` ho to `return null;` hota hai, matlab component render hi nahi hota.
+- Agar `true` ho to fixed background overlay aur right-side `aside` render hota hai.
+- `onClose` button ya backdrop click par form close hota hai.
+- Form ke data ko `createEmployee` mutation submit karta hai.
+
+Important: Ye form actual `Drawer`/`Sidebar` form hai, not a page route like `/employees/create`.
+
 ### [app/(dashboard)/departments/page.tsx](app/(dashboard)/departments/page.tsx)
 
 `/departments` par departments manage karne ka future module placeholder hai.
@@ -502,8 +532,8 @@ Ye files directly screen nahi dikhati. In ka kaam future mein screen aur databas
 
 ### API routes
 
-- [app/api/auth/register/route.ts](app/api/auth/register/route.ts): registration API, abhi `501` placeholder.
-- [app/api/auth/login/route.ts](app/api/auth/login/route.ts): login API, abhi `501` placeholder.
+- [app/api/auth/register/route.ts](app/api/auth/register/route.ts): name/email/password validate karke hashed User document create karta hai.
+- [app/api/auth/login/route.ts](app/api/auth/login/route.ts): bcrypt password check karke JWT ko HttpOnly cookie mein set karta hai.
 - [app/api/employees/route.ts](app/api/employees/route.ts): employees collection API boundary.
 - [app/api/employees/[id]/route.ts](app/api/employees/[id]/route.ts): ek employee ki API boundary.
 - [app/api/departments/route.ts](app/api/departments/route.ts): departments API boundary.
@@ -512,9 +542,9 @@ Ye files directly screen nahi dikhati. In ka kaam future mein screen aur databas
 
 ### Server files
 
-- [server/auth.ts](server/auth.ts): token verify karne ke liye intended, abhi error throw karta hai.
-- [server/db.ts](server/db.ts): database connect karne ke liye intended, abhi error throw karta hai.
-- [server/models/User.ts](server/models/User.ts): current simple `User` TypeScript type.
+- [server/auth.ts](server/auth.ts): JWT sign aur verify helper; secret `.env.local` se aata hai.
+- [server/db.ts](server/db.ts): cached Mongoose connection; `MONGODB_URI` se local MongoDB connect karta hai.
+- [server/models/User.ts](server/models/User.ts): Mongoose User schema with name, unique lowercase email, hashed password aur timestamps.
 - [server/models/Employee.ts](server/models/Employee.ts): employee model boundary.
 - [server/models/Department.ts](server/models/Department.ts): department model boundary.
 - [server/models/Attendance.ts](server/models/Attendance.ts): attendance model boundary.
@@ -528,15 +558,26 @@ Ye files directly screen nahi dikhati. In ka kaam future mein screen aur databas
 
 ## 16. Current project mein asal mein kya ho raha hai?
 
-Current actual behavior ye hai:
+Authentication ka current actual behavior ye hai:
 
 ```text
 User /
   -> /login
-  -> fields fill karta hai
-  -> sirf empty-field validation hoti hai
-  -> fake success alert aata hai
-  -> real login nahi hota
+  -> email/password fill karta hai
+  -> POST /api/auth/login
+  -> MongoDB User lookup + bcrypt.compare
+  -> JWT HttpOnly token cookie
+  -> /dashboard
+```
+
+Register flow:
+
+```text
+/register
+  -> name/email/password fill
+  -> POST /api/auth/register
+  -> bcrypt hash + MongoDB User.create
+  -> /login?registered=1
 ```
 
 Aur onboarding ka current behavior:
@@ -562,17 +603,17 @@ Aur onboarding ka current behavior:
 
 ### [middleware.ts](middleware.ts)
 
-Middleware dashboard URLs ko match karta hai, lekin function hamesha `NextResponse.next()` return karta hai. Is ka matlab koi token, cookie ya login session check nahi hota.
+Middleware dashboard URLs ko match karta hai. Agar `token` cookie nahi ho to request `/login` par redirect hoti hai; cookie ho to request dashboard screen tak jati hai. Cookie `HttpOnly` hai, is liye JavaScript uska token read nahi kar sakti.
 
 ### [app/(dashboard)/layout.tsx](app/(dashboard)/layout.tsx)
 
 Ye Sidebar aur Navbar lagata hai, lekin authentication guard nahi lagata.
 
-Is liye current project mein user direct `/dashboard` URL bhi open kar sakta hai.
+Is liye bina login ke direct `/dashboard` access nahi hota. Middleware JWT signature aur expiry bhi verify karta hai; invalid ya expired token par cookie delete karke `/login` redirect hota hai.
 
-## 18. Desired future flow
+## 18. Authentication flow ab implemented hai
 
-User ka desired secure flow ye hai:
+User ka current authentication flow ye hai:
 
 ```text
 1. User /login dekhe
@@ -583,22 +624,11 @@ User ka desired secure flow ye hai:
 6. User /login par aaye
 7. Wahi registered email/password dale
 8. Login successful ho
-9. User /company-info par jaye
-10. Onboarding ke 4 steps complete kare
-11. Onboarding data save ho
-12. User /dashboard par jaye
+9. User dashboard screen dekhe
+10. Logout endpoint/UI abhi next auth task hai
 ```
 
-Is future flow ko implement karne ke main points hain:
-
-- Login/register pages ko auth API se connect karna.
-- User ko database mein save karna.
-- Password ko secure hash ke saath store karna.
-- Login ke baad cookie/session/token banana.
-- Middleware mein session check karna.
-- Company-info ka submit handler banana.
-- Onboarding state ko backend par save karna.
-- Final step ke baad dashboard redirect karna.
+Implemented points: login/register pages API se connected hain, User MongoDB mein save hota hai, password bcrypt se hash hota hai, JWT cookie set hoti hai aur middleware protected routes ko guard karta hai. Onboarding persistence aur logout abhi separate work hai.
 
 ## 19. Error aur loading screens
 
@@ -618,4 +648,4 @@ service     = API call ka helper
 server      = database/auth ke server-side boundaries
 ```
 
-Abhi UI screens mostly design/placeholders hain. Login, register, database, session aur secure access implementation pending hai. Ye documentation file sirf project ko samajhne ke liye hai aur application ke design/code ko change nahi karti.
+Login, register, MongoDB database connection, password hashing, JWT session cookie aur dashboard route guard implemented hain. Onboarding data persistence, social login aur logout abhi separate modules hain. Ye documentation file project flow samjhati hai; screen behavior code files control karti hain.

@@ -1,24 +1,48 @@
 'use client';
+import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
 export default function LoginPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleLogin(event: React.FormEvent<HTMLFormElement>) {
+  async function handleLogin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setError('');
 
     if (!email.trim() || !password.trim()) {
-      window.alert('Please enter your email and password.');
+      setError('Please enter your email and password.');
       return;
     }
 
-    setEmail('');
-    setPassword('');
-    setShowPassword(false);
-    window.alert('Login successfully!');
+    setIsSubmitting(true);
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        setError(result.message || 'Login failed.');
+        return;
+      }
+
+      router.push('/company-info');
+      router.refresh();
+    } catch {
+      setError('Server se connection nahi ho saka.');
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -31,10 +55,13 @@ export default function LoginPage() {
         
         {/* Working External Image Area (65%) */}
         <div className="relative h-[65%] w-full bg-gray-100">
-          <img
+          <Image
             src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
             alt="Team collaborating"
-            className="absolute inset-0 w-full h-full object-cover"
+            fill
+            sizes="(max-width: 1024px) 100vw, 50vw"
+            unoptimized
+            className="object-cover"
           />
         </div>
         
@@ -46,7 +73,7 @@ export default function LoginPage() {
           <div className="flex items-center gap-2 mb-4">
             <div className="flex items-center text-[#219653]">
               <span className="text-2xl font-bold">H</span>
-              <div className="ml-1.5 h-5 w-[2px] bg-gray-600"></div>
+              <div className="ml-1.5 h-5 w-0.5 bg-gray-600"></div>
             </div>
             <span className="font-semibold text-[15px] tracking-wide">HRDashboard</span>
           </div>
@@ -74,12 +101,16 @@ export default function LoginPage() {
           <path d="M13 15l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
 
-        <div className="w-full max-w-[400px]">
+        <div className="w-full max-w-100">
           <h1 className="text-[1.75rem] font-bold text-center text-gray-900 mb-8 pt-6">
             Login first to your account
           </h1>
 
           <form className="space-y-5" onSubmit={handleLogin} noValidate>
+            {searchParams.get('registered') && (
+              <p className="text-sm text-emerald-600" role="status">Account ban gaya. Ab apni details se login karein.</p>
+            )}
+            {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
             <div>
               <label className="block text-[13px] font-semibold text-gray-700 mb-1.5">
                 Email Address <span className="text-red-500">*</span>
@@ -121,7 +152,7 @@ export default function LoginPage() {
             {/* Remember Me */}
             <div className="flex items-center text-sm pt-1">
               <label className="flex items-center gap-2 text-gray-500 cursor-pointer">
-                <input type="checkbox" className="rounded border-gray-300 w-[14px] h-[14px] text-emerald-500 focus:ring-0" />
+                <input type="checkbox" className="rounded border-gray-300 w-3.5 h-3.5 text-emerald-500 focus:ring-0" />
                 <span className="text-[13px]">Remember Me</span>
               </label>
             </div>
@@ -130,9 +161,10 @@ export default function LoginPage() {
             <div className="pt-4">
                <button
                 type="submit"
+                disabled={isSubmitting}
                 className="w-full py-3.5 rounded-lg text-[15px] font-semibold bg-black text-white transition hover:bg-gray-800"
               >
-                Login
+                {isSubmitting ? 'Logging in...' : 'Login'}
               </button>
             </div>
 
@@ -176,7 +208,7 @@ export default function LoginPage() {
         </div>
 
         {/* Footer - Right Side */}
-        <div className="absolute bottom-6 w-full px-8 sm:px-20 lg:px-12 xl:px-20 flex justify-between text-[11px] text-gray-400 max-w-[800px] mx-auto">
+        <div className="absolute bottom-6 w-full px-8 sm:px-20 lg:px-12 xl:px-20 flex justify-between text-[11px] text-gray-400 max-w-200 mx-auto">
           <span>© 2026 HRDashboard. All rights reserved.</span>
           <span className="flex gap-4 font-medium text-gray-500">
             <Link href="#" className="hover:text-gray-800">Terms & Conditions</Link>
