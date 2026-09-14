@@ -428,7 +428,7 @@ Ye numbers current code mein hard-coded hain. API ya database se nahi aa rahe.
 
 ### [app/(dashboard)/employees/page.tsx](app/(dashboard)/employees/page.tsx)
 
-`/employees` par employee records ka future module placeholder hai. Ye `ModulePage` import karta hai.
+`/employees` par MongoDB se employee records load hote hain. Search, office, job title aur status filters ke saath AG Grid table show hoti hai. Employee row click karne se selected employee ka detail page open hota hai.
 
 ### Add New button ka real flow (sidebar open hona)
 
@@ -490,8 +490,8 @@ Important: Ye form actual `Drawer`/`Sidebar` form hai, not a page route like `/e
 ### Employee ke extra routes
 
 - [app/(dashboard)/employees/create/page.tsx](app/(dashboard)/employees/create/page.tsx): `/employees/create`, employee create placeholder.
-- [app/(dashboard)/employees/[id]/page.tsx](app/(dashboard)/employees/[id]/page.tsx): `/employees/123`, employee profile placeholder. Current code `id` use nahi karta.
-- [app/(dashboard)/employees/[id]/edit/page.tsx](app/(dashboard)/employees/[id]/edit/page.tsx): `/employees/123/edit`, employee edit placeholder. Current code `id` use nahi karta.
+- [app/(dashboard)/employees/[id]/page.tsx](app/(dashboard)/employees/[id]/page.tsx): `/employees/123`, selected employee ka General, Job, Payroll, Documents aur Setting detail page.
+- [app/(dashboard)/employees/[id]/edit/page.tsx](app/(dashboard)/employees/[id]/edit/page.tsx): separate edit route placeholder; current editing detail page ke cards ke andar hoti hai.
 
 ## 14. Common components ka connection
 
@@ -534,8 +534,8 @@ Ye files directly screen nahi dikhati. In ka kaam future mein screen aur databas
 
 - [app/api/auth/register/route.ts](app/api/auth/register/route.ts): name/email/password validate karke hashed User document create karta hai.
 - [app/api/auth/login/route.ts](app/api/auth/login/route.ts): bcrypt password check karke JWT ko HttpOnly cookie mein set karta hai.
-- [app/api/employees/route.ts](app/api/employees/route.ts): employees collection API boundary.
-- [app/api/employees/[id]/route.ts](app/api/employees/[id]/route.ts): ek employee ki API boundary.
+- [app/api/employees/route.ts](app/api/employees/route.ts): employees list aur Add New create API boundary.
+- [app/api/employees/[id]/route.ts](app/api/employees/[id]/route.ts): employee detail, General, Job, Payroll, Settings aur Documents read/update API boundary.
 - [app/api/departments/route.ts](app/api/departments/route.ts): departments API boundary.
 - [app/api/attendance/route.ts](app/api/attendance/route.ts): attendance API boundary.
 - [app/api/leaves/route.ts](app/api/leaves/route.ts): leaves API boundary.
@@ -618,6 +618,7 @@ User ka current authentication flow ye hai:
 ```text
 1. User /login dekhe
 2. Unregistered credentials se login fail ho
+
 3. User /register par jaye
 4. Name, email, password submit kare
 5. Account database mein save ho
@@ -630,13 +631,90 @@ User ka current authentication flow ye hai:
 
 Implemented points: login/register pages API se connected hain, User MongoDB mein save hota hai, password bcrypt se hash hota hai, JWT cookie set hoti hai aur middleware protected routes ko guard karta hai. Onboarding persistence aur logout abhi separate work hai.
 
-## 19. Error aur loading screens
+## 19. Employee detail tabs: Job, Payroll aur Documents
+
+### Detail page
+
+[app/(dashboard)/employees/[id]/page.tsx](app/(dashboard)/employees/[id]/page.tsx) par employee row click karne se selected employee ka detail page open hota hai:
+
+```text
+/employees/{employeeId}
+  -> GET /api/employees/{employeeId}
+  -> MongoDB employees collection
+  -> selected employee ka profile
+```
+
+General tab ke baad ab teen tabs available hain:
+
+### Job tab
+
+Job tab mein Employment Information aur Contract Timeline sections hain. Employee ID, service year, position type, employment type, contract details, effective date aur work schedule edit kiye ja sakte hain.
+
+Save Changes par `PUT /api/employees/{employeeId}` ko `job` object bheja jata hai. API existing job data ke saath merge karke same employee document mein save karti hai.
+
+### Payroll tab
+
+Payroll tab mein Payroll Information aur Compensation Breakdown sections hain. Employment type, job title, dates, geofencing, total compensation, salary, recurring, one-off aur offset fields available hain.
+
+Payroll values `PUT /api/employees/{employeeId}` ke `payroll` object mein save hoti hain.
+
+### Documents tab
+
+Documents tab reference design ke mutabiq Personal Documents aur Payslips lists show karta hai. Har file ke saamne:
+
+- Blue open button file ko new browser tab mein kholta hai.
+- Red delete button file ko current UI list se remove karta hai.
+- Upload File se personal document select karke list mein add hoti hai.
+- Upload Payslip se payslip select karke Payslips list mein add hoti hai.
+- Upload ke baad file ka data employee ke `documents` field mein save hota hai, isliye page refresh ke baad bhi file list mein rehti hai.
+- Blue open button saved file ko new browser tab mein kholta hai.
+- Delete button employee ke saved document list se file remove karta hai.
+
+Current implementation selected files ko data URL ke roop mein MongoDB ke employee document mein save karti hai. Production ke liye large files ko object storage, jaise S3 ya Cloudinary, mein rakhna behtar hoga.
+
+### Setting tab
+
+Setting tab mein do independent cards hain:
+
+- Account Settings: timezone edit aur save.
+- Privacy: calendar birthday visibility (`Everyone` ya `Only me`) edit aur save.
+
+Dono cards ki edit state alag hai, is liye ek card edit karne par doosra card open nahi hota. Timezone employee ke top-level `timezone` field mein aur privacy `calendarVisibility` field mein save hoti hai.
+
+### Independent card editing
+
+Job aur Payroll ke har card ki apni edit state hai:
+
+```text
+Employment Information -> jobInfoEditing
+Contract Timeline      -> contractEditing
+Payroll Information    -> payrollInfoEditing
+Compensation Breakdown -> compensationEditing
+Account Settings       -> accountSettingsEditing
+Privacy                -> privacyEditing
+```
+
+Isliye ek card ka Edit icon click karne par sirf wahi card inputs aur Save Changes dikhata hai.
+
+### Employee document structure
+
+```text
+employees/{employeeId}
+  profile   -> personal, address aur emergency information
+  job       -> employment aur contract information
+  payroll   -> compensation information
+  documents -> uploaded personal documents aur payslips
+```
+
+Job aur Payroll ke liye Edit icon sirf draft state open karta hai. Data persist karne ke liye Save Changes click karna zaroori hai.
+
+## 20. Error aur loading screens
 
 - [app/loading.tsx](app/loading.tsx): page loading ke waqt `Loading HRMS...` dikhata hai.
 - [app/error.tsx](app/error.tsx): error hone par message aur `Try again` button dikhata hai.
 - [app/not-found.tsx](app/not-found.tsx): wrong URL par `Page not found` aur dashboard link dikhata hai.
 
-## 20. Final short summary
+## 21. Final short summary
 
 ```text
 page.tsx    = screen
