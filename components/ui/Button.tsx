@@ -9,6 +9,35 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   rightIcon?: React.ReactNode;
 }
 
+export default function Button({
+  variant = "primary",
+  className = "",
+  children,
+  ...props
+}: ButtonProps) {
+  const base = "w-full py-2.5 rounded-lg text-sm font-medium transition";
+  const styles =
+    variant === "primary"
+      ? "bg-[#0F3D2E] text-white hover:bg-[#0c3125]"
+      : "border border-gray-300 text-gray-700 hover:bg-gray-50";
+
+  return (
+    <button {...props} className={`${base} ${styles} ${className}`}>
+      {children}
+    </button>
+  );
+}
+import { type ButtonHTMLAttributes, forwardRef } from "react";
+import { Loader2 } from "lucide-react";
+
+export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: "primary" | "secondary" | "outline" | "dark" | "ghost";
+  size?: "sm" | "md" | "lg";
+  isLoading?: boolean;
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
+}
+
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
