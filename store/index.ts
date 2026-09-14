@@ -1,9 +1,17 @@
 import { configureStore } from "@reduxjs/toolkit";
 import onboardingReducer from "@/features/onboarding/onboardingSlice";
+import dashboardReducer from "@/features/dashboard/dashboardSlice";
+import { dashboardApi } from "@/features/dashboard/dashboardApi";
+import { employeesApi } from "@/features/employees/employeesApi";
+import { timeOffApi } from "@/features/time-off/timeOffApi";
 
 export const store = configureStore({
   reducer: {
     onboarding: onboardingReducer,
+    dashboard: dashboardReducer,
+    [dashboardApi.reducerPath]: dashboardApi.reducer,
+    [employeesApi.reducerPath]: employeesApi.reducer,
+    [timeOffApi.reducerPath]: timeOffApi.reducer,
   },
 import dashboardReducer from "@/features/dashboard/dashboardSlice";
 import { dashboardApi } from "@/features/dashboard/dashboardApi";

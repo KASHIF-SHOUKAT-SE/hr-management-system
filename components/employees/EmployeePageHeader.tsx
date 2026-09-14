@@ -1,7 +1,11 @@
 import { Button } from "@/components/ui/Button";
 import { Download, Plus } from "lucide-react";
 
-export function EmployeePageHeader() {
+interface EmployeePageHeaderProps {
+  onAddNew: () => void;
+}
+
+export function EmployeePageHeader({ onAddNew }: EmployeePageHeaderProps) {
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
       <div>
@@ -13,7 +17,7 @@ export function EmployeePageHeader() {
         <Button variant="outline" leftIcon={<Download className="h-4 w-4" />}>
           Download
         </Button>
-        <Button variant="dark" leftIcon={<Plus className="h-4 w-4" />}>
+        <Button variant="dark" leftIcon={<Plus className="h-4 w-4" />} onClick={onAddNew}>
           Add New
         </Button>
       </div>

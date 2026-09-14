@@ -1,5 +1,12 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import type { GetEmployeesRequest, GetEmployeesResponse, GetEmployeeFiltersResponse } from "./employees.types";
+import type { Employee, GetEmployeesRequest, GetEmployeesResponse, GetEmployeeFiltersResponse } from "./employees.types";
+
+export interface CreateEmployeeRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  joinDate: string;
+}
 
 export const employeesApi = createApi({
   reducerPath: "employeesApi",
@@ -26,7 +33,19 @@ export const employeesApi = createApi({
       query: () => "/employees/filters",
       providesTags: ["Employees"],
     }),
+    createEmployee: builder.mutation<Employee, CreateEmployeeRequest>({
+      query: (body) => ({
+        url: "/employees",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Employees"],
+    }),
   }),
 });
 
-export const { useGetEmployeesQuery, useGetEmployeeFiltersQuery } = employeesApi;
+export const {
+  useGetEmployeesQuery,
+  useGetEmployeeFiltersQuery,
+  useCreateEmployeeMutation,
+} = employeesApi;

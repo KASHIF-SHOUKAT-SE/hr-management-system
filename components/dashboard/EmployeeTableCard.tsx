@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Search } from "lucide-react";
-import { EmployeeGrid } from "@/components/grids/EmployeeGrid";
+import { dummyEmployees, EmployeeGrid } from "@/components/grids/EmployeeGrid";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { useGetEmployeeSummaryQuery } from "@/features/dashboard/dashboardApi";
 import type { EmployeeRow } from "@/features/dashboard/dashboard.types";
@@ -22,8 +22,8 @@ export function EmployeeTableCard({ rows: initialRows }: EmployeeTableCardProps)
 
   const allEmployees: EmployeeRow[] = useMemo(() => {
     if (initialRows && initialRows.length > 0) return initialRows;
-    if (apiData?.employees) return apiData.employees;
-    return [];
+    if (apiData?.employees && apiData.employees.length > 0) return apiData.employees;
+    return dummyEmployees;
   }, [initialRows, apiData]);
 
   // Client-side filtering
