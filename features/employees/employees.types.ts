@@ -11,6 +11,16 @@ export interface Employee {
   accountStatus: "activated" | "need-invitation";
   joinDate: string;
   resignDate?: string;
+  timezone?: string;
+  calendarVisibility?: "Everyone" | "Only me";
+  documents?: Array<{
+    id: string;
+    name: string;
+    category: "Personal Documents" | "Payslips";
+    url: string;
+  }>;
+  job?: Record<string, string>;
+  payroll?: Record<string, string>;
 }
 
 export interface GetEmployeesRequest {

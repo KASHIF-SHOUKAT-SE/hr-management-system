@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import EmployeeModel from "./models/Employee";
 
-const MONGODB_URI = "mongodb://127.0.0.1:27017/hr_management";
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/hr_management";
 
 const firstNames = [
   "Pristia", "Hanna", "Rayhan", "Alisa", "Dimas", "Kathryn", "Eleanor", "Cody", "Wade", "Jane",
