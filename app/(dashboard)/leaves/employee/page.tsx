@@ -4,12 +4,13 @@ import { useState, useMemo } from "react";
 import { useGetTeamLeaveRequestsQuery, useGetTimeOffTypesQuery } from "@/features/time-off/timeOffApi";
 import { TimeOffDataGrid } from "@/components/time-off/TimeOffDataGrid";
 
-export default function TeamTimeOffPage() {
+export default function EmployeeTimeOffPage() {
   const [requestType, setRequestType] = useState("All Type");
   const [requestStatus, setRequestStatus] = useState("All Status");
   const [requestPage, setRequestPage] = useState(1);
-  const requestLimit = 8; // Showing 8 per page based on UI
+  const requestLimit = 8;
 
+  // We are reusing the team requests query here as it conceptually fetches all requests.
   const { data: requestsData, isLoading: isLoadingRequests, isFetching: isFetchingRequests } = useGetTeamLeaveRequestsQuery({
     page: requestPage,
     limit: requestLimit,
@@ -38,7 +39,7 @@ export default function TeamTimeOffPage() {
   return (
     <div className="mx-auto flex max-w-[1400px] flex-col gap-8">
       <TimeOffDataGrid
-        title="Team Time Off"
+        title="Employee Requests"
         rows={requestsData?.data || []}
         isLoading={isLoadingRequests || isFetchingRequests}
         typeOptions={typeOptions}

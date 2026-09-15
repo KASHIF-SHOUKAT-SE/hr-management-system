@@ -34,15 +34,48 @@ export default function UseCasePage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
 
-  const domain = useAppSelector((state) => state.onboarding.domain);
+  const state = useAppSelector((state) => state.onboarding);
+  const domain = state.domain;
   const fullDomain = domain ? `${domain}.hrline.com` : "yourcompany.hrline.com";
 
   const [selected, setSelected] = useState("Onboarding new employees");
+  const [loading, setLoading] = useState(false);
 
-  const handleContinue = (e: React.FormEvent) => {
+  const handleContinue = async (e: React.FormEvent) => {
     e.preventDefault();
     dispatch(setUseCase(selected));
-    router.push("/dashboard"); // dashboard design milte hi confirm karenge
+    setLoading(true);
+
+    try {
+      // POST all onboarding data to our API
+      const response = await fetch("/api/company", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          companyName: state.companyName,
+          domain: state.domain,
+          companySize: state.companySize,
+          industry: state.industry,
+          role: state.role,
+          customRole: state.customRole,
+          useCase: selected, // using the local state since dispatch might be async
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        window.alert(data.error || "Failed to create company");
+        setLoading(false);
+        return;
+      }
+
+      router.push("/dashboard");
+    } catch (error) {
+      console.error("Failed to create company:", error);
+      window.alert("Something went wrong");
+      setLoading(false);
+    }
   };
 
   return (
@@ -74,9 +107,10 @@ export default function UseCasePage() {
             <button
               type="submit"
               form="use-case-form"
-              className="px-6 py-2.5 rounded-lg text-sm font-medium bg-gray-900 text-white hover:bg-gray-800"
+              disabled={loading}
+              className="px-6 py-2.5 rounded-lg text-sm font-medium bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-50"
             >
-              Continue
+              {loading ? "Creating..." : "Continue"}
             </button>
           </div>
         </div>

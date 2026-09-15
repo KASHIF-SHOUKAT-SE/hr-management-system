@@ -3,14 +3,16 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  function handleRegister(event: React.FormEvent<HTMLFormElement>) {
+  async function handleRegister(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!name.trim() || !email.trim() || !password.trim()) {
@@ -18,11 +20,29 @@ export default function RegisterPage() {
       return;
     }
 
-    setName("");
-    setEmail("");
-    setPassword("");
-    setShowPassword(false);
-    window.alert("Account created successfully!");
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        window.alert(data.error || "Failed to register");
+        return;
+      }
+
+      setName("");
+      setEmail("");
+      setPassword("");
+      setShowPassword(false);
+      router.push("/company-info");
+    } catch (error) {
+      console.error("Registration error:", error);
+      window.alert("Something went wrong");
+    }
   }
 
   return (

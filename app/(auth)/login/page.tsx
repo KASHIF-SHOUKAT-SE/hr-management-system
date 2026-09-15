@@ -1,13 +1,15 @@
 'use client';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  function handleLogin(event: React.FormEvent<HTMLFormElement>) {
+  async function handleLogin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!email.trim() || !password.trim()) {
@@ -15,10 +17,33 @@ export default function LoginPage() {
       return;
     }
 
-    setEmail('');
-    setPassword('');
-    setShowPassword(false);
-    window.alert('Login successfully!');
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        window.alert(data.error || "Failed to login");
+        return;
+      }
+
+      setEmail('');
+      setPassword('');
+      setShowPassword(false);
+      
+      if (data.hasCompany) {
+        router.push('/dashboard');
+      } else {
+        router.push('/company-info');
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      window.alert("Something went wrong");
+    }
   }
 
   return (

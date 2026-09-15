@@ -12,7 +12,8 @@ import { DateRangeInput } from "@/components/ui/DateRangeInput";
 import type { TeamLeaveRequest } from "@/features/time-off/timeOff.types";
 import Image from "next/image";
 
-interface TeamTimeOffListProps {
+interface TimeOffDataGridProps {
+  title?: string;
   rows: TeamLeaveRequest[];
   isLoading: boolean;
   typeOptions: { label: string; value: string }[];
@@ -87,7 +88,8 @@ function StatusRenderer(params: ICellRendererParams<TeamLeaveRequest>) {
   );
 }
 
-export function TeamTimeOffList({
+export function TimeOffDataGrid({
+  title = "Team Time Off",
   rows,
   isLoading,
   typeOptions,
@@ -98,7 +100,7 @@ export function TeamTimeOffList({
   page,
   totalPages,
   onPageChange,
-}: TeamTimeOffListProps) {
+}: TimeOffDataGridProps) {
   const columnDefs = useMemo<ColDef<TeamLeaveRequest>[]>(
     () => [
       {
@@ -107,8 +109,6 @@ export function TeamTimeOffList({
         flex: 2,
         minWidth: 200,
         cellRenderer: EmployeeRenderer,
-        headerCheckboxSelection: true,
-        checkboxSelection: true,
       },
       { headerName: "From", field: "from", flex: 1, minWidth: 120, cellRenderer: DateRenderer },
       { headerName: "To", field: "to", flex: 1, minWidth: 120, cellRenderer: DateRenderer },
@@ -133,7 +133,7 @@ export function TeamTimeOffList({
     <div className="flex flex-col rounded-3xl bg-white p-6 shadow-sm border border-gray-100">
       {/* Top Bar */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-gray-900">Team Time Off</h2>
+        <h2 className="text-xl font-bold text-gray-900">{title}</h2>
         
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative">
@@ -192,7 +192,7 @@ export function TeamTimeOffList({
             rowHeight={64}
             headerHeight={48}
             suppressCellFocus={true}
-            rowSelection={{ mode: "multiRow", checkboxes: false, headerCheckbox: false }}
+            rowSelection={{ mode: "multiRow", checkboxes: true, headerCheckbox: true }}
             suppressDragLeaveHidesColumns={true}
           />
         )}

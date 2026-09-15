@@ -12,6 +12,7 @@ export interface IEmployee extends Document {
   accountStatus: "activated" | "need-invitation";
   joinDate: Date;
   resignDate?: Date;
+  companyId: mongoose.Types.ObjectId;
 }
 
 const EmployeeSchema = new Schema<IEmployee>(
@@ -35,6 +36,11 @@ const EmployeeSchema = new Schema<IEmployee>(
     },
     joinDate: { type: Date, default: Date.now },
     resignDate: { type: Date },
+    companyId: {
+      type: Schema.Types.ObjectId,
+      ref: "Company",
+      required: true,
+    },
   },
   { timestamps: true }
 );
