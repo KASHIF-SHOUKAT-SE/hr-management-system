@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { AgGridReact } from "ag-grid-react";
 import {
   type ColDef,
@@ -64,6 +65,8 @@ interface EmployeeDataGridProps {
 }
 
 export function EmployeeDataGrid({ rows, isLoading = false }: EmployeeDataGridProps) {
+  const router = useRouter();
+
   const columnDefs = useMemo<ColDef<Employee>[]>(
     () => [
       {
@@ -72,6 +75,7 @@ export function EmployeeDataGrid({ rows, isLoading = false }: EmployeeDataGridPr
         minWidth: 200,
         flex: 2,
         cellRenderer: EmployeeNameRenderer,
+        cellClass: "cursor-pointer",
       },
       {
         headerName: "Job Title",
@@ -151,6 +155,11 @@ export function EmployeeDataGrid({ rows, isLoading = false }: EmployeeDataGridPr
         rowHeight={56}
         headerHeight={48}
         rowSelection={rowSelection}
+        onRowClicked={(event) => {
+          if (event.data?.id) {
+            router.push(`/employees/${event.data.id}`);
+          }
+        }}
         loading={isLoading}
         domLayout="autoHeight"
       />

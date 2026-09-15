@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "10", 10);
 
     // Build the query object
-    const query: any = {};
+    const query: Record<string, unknown> = {};
 
     if (search) {
       query.name = { $regex: search, $options: "i" };
@@ -78,6 +78,51 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function POST(request: NextRequest) {
+  try {
+    await connectDatabase();
+    const body = await request.json();
+    const firstName = typeof body.firstName === "string" ? body.firstName.trim() : "";
+    const lastName = typeof body.lastName === "string" ? body.lastName.trim() : "";
+    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+    const joinDate = typeof body.joinDate === "string" ? body.joinDate : "";
+
+    if (!firstName || !lastName || !email || !joinDate) {
+      return NextResponse.json({ error: "All employee fields are required." }, { status: 400 });
+    }
+
+    const employee = await EmployeeModel.create({
+      name: `${firstName} ${lastName}`,
+      email,
+      jobTitle: "Employee",
+      lineManager: "Unassigned",
+      department: "General",
+      office: "Main Office",
+      status: "onboarding",
+      accountStatus: "need-invitation",
+      joinDate: new Date(joinDate),
+    });
+
+    return NextResponse.json({
+      id: employee._id.toString(),
+      name: employee.name,
+      email: employee.email,
+      jobTitle: employee.jobTitle,
+      lineManager: employee.lineManager,
+      department: employee.department,
+      office: employee.office,
+      status: employee.status,
+      accountStatus: employee.accountStatus,
+      joinDate: employee.joinDate.toISOString(),
+    }, { status: 201 });
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === 11000) {
+      return NextResponse.json({ error: "An employee with this email already exists." }, { status: 409 });
+    }
+
+    console.error("Failed to create employee:", error);
+    return NextResponse.json({ error: "Failed to create employee" }, { status: 500 });
+  }
 export async function POST() {
   return Response.json(
     { message: "Employee creation ready for implementation." },

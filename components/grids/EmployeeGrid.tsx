@@ -49,7 +49,7 @@ function ActionsRenderer() {
 
 /* ── Dummy data ── */
 
-const dummyEmployees: EmployeeRow[] = [
+export const dummyEmployees: EmployeeRow[] = [
   {
     id: "1",
     name: "Pristia Candra",
@@ -175,6 +175,10 @@ export function EmployeeGrid({
   }), []);
 
   const rowHeight = compact ? 48 : 56;
+  const paginationPageSizeSelector = useMemo(
+    () => Array.from(new Set([pageSize, 20, 50, 100])),
+    [pageSize]
+  );
 
   return (
     <div

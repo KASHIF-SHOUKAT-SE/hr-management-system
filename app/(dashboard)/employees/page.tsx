@@ -6,6 +6,7 @@ import { EmployeeFilterBar } from "@/components/employees/EmployeeFilterBar";
 import { EmployeeDataGrid } from "@/components/employees/EmployeeDataGrid";
 import { Pagination } from "@/components/ui/Pagination";
 import { useGetEmployeesQuery, useGetEmployeeFiltersQuery } from "@/features/employees/employeesApi";
+import { EmployeeForm } from "@/components/forms/EmployeeForm";
 
 export default function EmployeesPage() {
   const [search, setSearch] = useState("");
@@ -13,6 +14,7 @@ export default function EmployeesPage() {
   const [jobTitle, setJobTitle] = useState("All Job Titles");
   const [status, setStatus] = useState("All Status");
   const [page, setPage] = useState(1);
+  const [isEmployeeFormOpen, setIsEmployeeFormOpen] = useState(false);
   const limit = 10;
 
   // Fetch real data from MongoDB via RTK Query with filters
@@ -62,7 +64,7 @@ export default function EmployeesPage() {
 
   return (
     <div className="mx-auto max-w-[1400px]">
-      <EmployeePageHeader />
+      <EmployeePageHeader onAddNew={() => setIsEmployeeFormOpen(true)} />
 
       <div className="flex flex-col rounded-2xl bg-white shadow-sm border border-gray-100 mb-8">
         <EmployeeFilterBar
@@ -97,6 +99,11 @@ export default function EmployeesPage() {
           </div>
         )}
       </div>
+
+      <EmployeeForm
+        isOpen={isEmployeeFormOpen}
+        onClose={() => setIsEmployeeFormOpen(false)}
+      />
     </div>
   );
 }

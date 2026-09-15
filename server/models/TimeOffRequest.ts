@@ -32,8 +32,9 @@ TimeOffRequestSchema.virtual("id").get(function () {
 TimeOffRequestSchema.set("toJSON", {
   virtuals: true,
   transform: (doc, ret) => {
-    delete ret._id;
-    delete ret.__v;
+    const response = ret as Record<string, unknown>;
+    delete response._id;
+    delete response.__v;
   },
 });
 
