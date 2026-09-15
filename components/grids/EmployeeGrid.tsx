@@ -194,7 +194,7 @@ export function EmployeeGrid({
         rowSelection={rowSelection}
         pagination={rows.length > pageSize}
         paginationPageSize={pageSize}
-        paginationPageSizeSelector={paginationPageSizeSelector}
+        paginationPageSizeSelector={[5, 10, 20, 50, 100]}
       />
     </div>
   );

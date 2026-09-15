@@ -1,50 +1,70 @@
-import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
+import { SignJWT } from "jose";
 import { connectDatabase } from "@/server/db";
-import User from "@/server/models/User";
-import { signToken } from "@/server/auth";
+import UserModel from "@/server/models/User";
 
-export async function POST(request: Request) {
+const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_key_change_in_production";
+
+export async function POST(req: Request) {
   try {
-    await connectDatabase();
-    const body = await request.json();
-    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
-    const password = typeof body.password === "string" ? body.password : "";
+    const { email, password } = await req.json();
 
     if (!email || !password) {
       return NextResponse.json(
-        { success: false, message: "Email aur password zaroori hain." },
+        { error: "Email and password are required" },
         { status: 400 }
       );
     }
 
-    const user = await User.findOne({ email });
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    await connectDatabase();
+
+    const user = await UserModel.findOne({ email });
+    if (!user) {
       return NextResponse.json(
-        { success: false, message: "Email ya password ghalat hai." },
+        { error: "Invalid credentials" },
         { status: 401 }
       );
     }
 
-    const response = NextResponse.json({
-      success: true,
-      message: "Login successful.",
-      user: { name: user.name, email: user.email },
-    });
+    const isMatch = await bcrypt.compare(password, user.password || "");
+    if (!isMatch) {
+      return NextResponse.json(
+        { error: "Invalid credentials" },
+        { status: 401 }
+      );
+    }
 
-    response.cookies.set("token", signToken({ userId: user._id.toString(), email: user.email }), {
+    // Create JWT
+    const secret = new TextEncoder().encode(JWT_SECRET);
+    const token = await new SignJWT({
+      userId: user._id.toString(),
+      email: user.email,
+      role: user.role,
+      companyId: user.companyId ? user.companyId.toString() : undefined,
+    })
+      .setProtectedHeader({ alg: "HS256" })
+      .setExpirationTime("7d")
+      .sign(secret);
+
+    const response = NextResponse.json(
+      { success: true, message: "Logged in successfully", hasCompany: !!user.companyId },
+      { status: 200 }
+    );
+
+    response.cookies.set("auth-token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7,
+      maxAge: 7 * 24 * 60 * 60, // 7 days
       path: "/",
     });
 
     return response;
   } catch (error) {
-    console.error("Login failed:", error);
+    console.error("Login Error:", error);
     return NextResponse.json(
-      { success: false, message: "Kuch masla ho gaya, dobara try karein." },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

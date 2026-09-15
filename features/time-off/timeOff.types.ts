@@ -81,3 +81,69 @@ export interface GetBalanceHistoryResponse {
 export interface TimeOffFiltersResponse {
   types: string[];
 }
+
+/* ── Holidays ── */
+
+export interface Holiday {
+  _id: string;
+  name: string;
+  from: string;
+  to: string;
+}
+
+export interface CreateHolidayPayload {
+  name: string;
+  from: string;
+  to: string;
+}
+
+/* ── Leave Types & Policies ── */
+
+export interface LeaveType {
+  _id: string;
+  name: string;
+  code: string;
+  isPaid: boolean;
+  unit: "Days" | "Hours";
+  isActive: boolean;
+  policies?: LeavePolicy[];
+}
+
+export interface CreateLeaveTypePayload {
+  name: string;
+  isPaid: boolean;
+  unit: "Days" | "Hours";
+  isActive?: boolean;
+}
+
+export interface LeavePolicy {
+  _id: string;
+  name: string;
+  leaveType: string | LeaveType;
+  description?: string;
+  eligibility: string;
+  accrualFrequency: "Yearly" | "Monthly" | "Weekly" | "None";
+  entitlementAmount: number;
+  maxCarryOver: number;
+  carryOverExpiration: number;
+  durationAllowed: {
+    isHourlyAllowed: boolean;
+    standardWorkingHours: number;
+  };
+}
+
+export interface CreateLeavePolicyPayload {
+  name: string;
+  leaveType: string;
+  description?: string;
+  eligibility?: string;
+  accrualFrequency?: "Yearly" | "Monthly" | "Weekly" | "None";
+  entitlementAmount: number;
+  maxCarryOver?: number;
+  carryOverExpiration?: number;
+  durationAllowed?: {
+    isHourlyAllowed: boolean;
+    standardWorkingHours: number;
+  };
+}
+

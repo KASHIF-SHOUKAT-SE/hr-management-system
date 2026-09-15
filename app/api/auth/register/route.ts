@@ -1,49 +1,72 @@
-import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
+import { SignJWT } from "jose";
 import { connectDatabase } from "@/server/db";
-import User from "@/server/models/User";
+import UserModel from "@/server/models/User";
 
-export async function POST(request: Request) {
+const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_key_change_in_production";
+
+export async function POST(req: Request) {
   try {
-    await connectDatabase();
-    const body = await request.json();
-    const name = typeof body.name === "string" ? body.name.trim() : "";
-    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
-    const password = typeof body.password === "string" ? body.password : "";
+    const { name, email, password } = await req.json();
 
     if (!name || !email || !password) {
       return NextResponse.json(
-        { success: false, message: "Name, email aur password zaroori hain." },
+        { error: "Name, email, and password are required" },
         { status: 400 }
       );
     }
 
-    if (password.length < 6) {
-      return NextResponse.json(
-        { success: false, message: "Password kam az kam 6 characters ka hona chahiye." },
-        { status: 400 }
-      );
-    }
+    await connectDatabase();
 
-    const existingUser = await User.findOne({ email }).lean();
+    const existingUser = await UserModel.findOne({ email });
     if (existingUser) {
       return NextResponse.json(
-        { success: false, message: "Ye email pehle se registered hai." },
+        { error: "User with this email already exists" },
         { status: 409 }
       );
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    await User.create({ name, email, password: hashedPassword });
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-    return NextResponse.json(
-      { success: true, message: "Account ban gaya. Ab login karein." },
+    const newUser = await UserModel.create({
+      name,
+      email,
+      password: hashedPassword,
+      role: "admin", // The first user registering is the admin of their workspace
+    });
+
+    // Create JWT
+    const secret = new TextEncoder().encode(JWT_SECRET);
+    const token = await new SignJWT({
+      userId: newUser._id.toString(),
+      email: newUser.email,
+      role: newUser.role,
+    })
+      .setProtectedHeader({ alg: "HS256" })
+      .setExpirationTime("7d")
+      .sign(secret);
+
+    // Return the response and set cookie
+    const response = NextResponse.json(
+      { success: true, message: "User registered successfully" },
       { status: 201 }
     );
+
+    response.cookies.set("auth-token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60, // 7 days
+      path: "/",
+    });
+
+    return response;
   } catch (error) {
-    console.error("Registration failed:", error);
+    console.error("Register Error:", error);
     return NextResponse.json(
-      { success: false, message: "Kuch masla ho gaya, dobara try karein." },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

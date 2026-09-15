@@ -22,26 +22,32 @@ export default function LoginPage() {
       return;
     }
 
-    setIsSubmitting(true);
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-      const result = await response.json();
+
+      const data = await response.json();
 
       if (!response.ok) {
-        setError(result.message || 'Login failed.');
+        window.alert(data.error || "Failed to login");
         return;
       }
 
-      router.push('/company-info');
-      router.refresh();
-    } catch {
-      setError('Server se connection nahi ho saka.');
-    } finally {
-      setIsSubmitting(false);
+      setEmail('');
+      setPassword('');
+      setShowPassword(false);
+      
+      if (data.hasCompany) {
+        router.push('/dashboard');
+      } else {
+        router.push('/company-info');
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      window.alert("Something went wrong");
     }
   }
 
