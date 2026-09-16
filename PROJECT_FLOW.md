@@ -430,6 +430,86 @@ Ye numbers current code mein hard-coded hain. API ya database se nahi aa rahe.
 
 `/employees` par MongoDB se employee records load hote hain. Search, office, job title aur status filters ke saath AG Grid table show hoti hai. Employee row click karne se selected employee ka detail page open hota hai.
 
+> **Important clarification:** Dashboard ke `/dashboard` page par jo compact employee card hai, us mein Add New button nahi hai. Employee create karne ka Add New button `/employees` management page ke header mein hai. Dashboard card sirf employee summary/list dikhata hai.
+
+### Employee ka complete practical flow
+
+```text
+/employees
+  -> Add New click
+  -> right-side Add New Profile drawer
+  -> first name, last name, email, join date fill
+  -> Create click
+  -> POST /api/employees
+  -> MongoDB employees collection mein record create
+  -> drawer close
+  -> Employees query invalidate/refetch
+  -> naya employee table mein show
+  -> employee row click
+  -> /employees/{employeeId}
+  -> employee detail/profile page
+```
+
+Create hone wale employee ko API initial values deti hai: `status: onboarding`, `accountStatus: need-invitation`, `jobTitle: Employee`, `department: General`, `office: Main Office` aur `lineManager: Unassigned`. Baad mein profile ke andar in details ko update kiya ja sakta hai.
+
+### Add New ke baad exactly kya hota hai?
+
+Ye woh complete sequence hai jo Create button ke baad follow hota hai:
+
+1. **New employee ka table mein dobara show hona:** `POST /api/employees` successful hone ke baad `createEmployee` mutation `Employees` cache ko invalidate karti hai. `/employees` page ki `useGetEmployeesQuery` dobara run hoti hai, MongoDB se latest list aati hai aur naya employee table mein show hota hai.
+2. **Employee row click karke profile open hona:** [components/employees/EmployeeDataGrid.tsx](components/employees/EmployeeDataGrid.tsx) ke `onRowClicked` mein selected employee ka `id` milta hai. Phir `router.push(\`/employees/${event.data.id}\`)` chal kar [app/(dashboard)/employees/[id]/page.tsx](app/(dashboard)/employees/[id]/page.tsx) open hota hai.
+3. **Profile data load hona:** profile page `useParams()` se id read karta hai aur `useGetEmployeeByIdQuery(id)` ke zariye `GET /api/employees/[id]` call karta hai. API MongoDB ke employee record se profile data return karti hai.
+4. **Profile tabs:** profile ke right side ye tabs hote hain: `General`, `Job`, `Payroll`, `Documents`, `Setting`.
+5. **Har tab ke sections aur editable fields:**
+   - `General`: Personal Info, Address aur Emergency Contact.
+   - `Job`: Employment Information aur Contract Timeline.
+   - `Payroll`: Payroll Information aur Compensation Breakdown.
+   - `Documents`: Personal Documents aur Payslips; upload, open aur delete actions.
+   - `Setting`: Account Settings aur Privacy.
+6. **Save, upload aur delete ka API flow:** Pencil se edit mode open hota hai. `Save Changes`, document upload ya document delete par `updateEmployee` mutation `PUT /api/employees/[id]` call karti hai. API employee ke `profile`, `job`, `payroll`, `documents`, `timezone` ya `calendarVisibility` field ko update karke MongoDB mein save karti hai.
+7. **Frontend se database tak code tracing:**
+
+   ```text
+   EmployeeDataGrid.tsx
+     -> router.push('/employees/{id}')
+   employees/[id]/page.tsx
+     -> useGetEmployeeByIdQuery / useUpdateEmployeeMutation
+   features/employees/employeesApi.ts
+     -> GET ya PUT /api/employees/[id]
+   app/api/employees/[id]/route.ts
+     -> EmployeeModel
+     -> MongoDB employees collection
+   ```
+
+Isliye tab par click karna sirf screen ke andar tab change karta hai. Database mein actual change tab hota hai jab `Save Changes`, upload ya delete action API ko call karta hai.
+
+### Employee detail code ki component structure
+
+Employee detail route ko ek hi bari file mein rakhne ke bajaye ab route thin wrapper hai:
+
+```text
+app/(dashboard)/employees/[id]/page.tsx
+  -> components/employees/detail/EmployeeDetailPage.tsx
+     -> EmployeeProfileSidebar.tsx
+     -> GeneralTab.tsx
+     -> JobTab.tsx
+     -> PayrollTab.tsx
+     -> DocumentsTab.tsx
+     -> SettingTab.tsx
+     -> DetailFields.tsx
+     -> employeeDetail.types.ts
+```
+
+Responsibilities alag hain:
+
+- `EmployeeDetailPage.tsx`: query, local drafts, tab selection, save/upload/delete mutations aur callbacks.
+- `GeneralTab.tsx`, `JobTab.tsx`, `PayrollTab.tsx`, `DocumentsTab.tsx`, `SettingTab.tsx`: apne tab ka UI aur fields.
+- `EmployeeProfileSidebar.tsx`: employee summary sidebar.
+- `DetailFields.tsx`: reusable `SectionCard`, `InfoField` aur `InputField`.
+- `employeeDetail.types.ts`: profile, job, payroll, document aur save action ke TypeScript types.
+
+Is refactor se URL, design, fields, API calls aur database behavior change nahi hua. Future mein kisi tab ka UI change karna ho to sirf us tab ki component file dekhni hogi; save logic aur shared data flow coordinator mein rahega.
+
 ### Add New button ka real flow (sidebar open hona)
 
 Employee list page par Add New button as a real UI action work karta hai. Is flow ka code exact yahan hai:
@@ -464,6 +544,8 @@ Ye actual sidebar card hai. Is file mein:
 - Agar `true` ho to fixed background overlay aur right-side `aside` render hota hai.
 - `onClose` button ya backdrop click par form close hota hai.
 - Form ke data ko `createEmployee` mutation submit karta hai.
+
+Form mein required fields First Name, Last Name, Email Address aur Join Date hain. `createEmployee` mutation `features/employees/employeesApi.ts` ke zariye `POST /api/employees` call karti hai. Successful response ke baad form reset hota hai, drawer close hota hai aur `invalidatesTags: ["Employees"]` ki wajah se employee list dobara fetch hoti hai. Isliye naya record page refresh ke baghair table mein aa jana chahiye.
 
 Important: Ye form actual `Drawer`/`Sidebar` form hai, not a page route like `/employees/create`.
 
@@ -631,7 +713,7 @@ User ka current authentication flow ye hai:
 
 Implemented points: login/register pages API se connected hain, User MongoDB mein save hota hai, password bcrypt se hash hota hai, JWT cookie set hoti hai aur middleware protected routes ko guard karta hai. Onboarding persistence aur logout abhi separate work hai.
 
-## 19. Employee detail tabs: Job, Payroll aur Documents
+## 19. Employee profile/detail ka complete flow
 
 ### Detail page
 
@@ -644,7 +726,25 @@ Implemented points: login/register pages API se connected hain, User MongoDB mei
   -> selected employee ka profile
 ```
 
-General tab ke baad ab teen tabs available hain:
+Frontend `useParams()` se URL ka `id` read karta hai. Is id ke saath `useGetEmployeeByIdQuery` `GET /api/employees/{employeeId}` call karta hai. API MongoDB se employee nikal kar `profile`, `job`, `payroll`, `documents`, `timezone` aur `calendarVisibility` data frontend ko bhejti hai. Agar data load ho raha ho to `Loading employee details...` show hota hai.
+
+Profile page ke left side employee ka avatar/name, job title, status, email, phone, timezone, department, office aur line manager show hote hain. Right side tabs hain:
+
+```text
+General | Job | Payroll | Documents | Setting
+```
+
+Har editable card mein Pencil icon click karne se sirf us card ki draft/edit state open hoti hai. `Save Changes` par data `PUT /api/employees/{employeeId}` se MongoDB mein save hota hai; `Cancel` draft ko purani saved value par wapas karta hai.
+
+### General tab: personal profile
+
+General tab employee ki basic profile information ka section hai:
+
+- **Personal Info:** full name, gender, date of birth, marital status, nationality, personal tax ID, email, social insurance, health insurance aur phone number.
+- **Address:** primary address, country, state/province, city aur post code.
+- **Emergency Contact:** contact ka naam, relationship, phone number aur email.
+
+Ye information API ke employee document ke `profile` object mein save hoti hai. Profile updates ke liye API existing profile ke saath new fields merge karti hai, isliye sirf edited fields change hoti hain.
 
 ### Job tab
 
@@ -708,6 +808,28 @@ employees/{employeeId}
 
 Job aur Payroll ke liye Edit icon sirf draft state open karta hai. Data persist karne ke liye Save Changes click karna zaroori hai.
 
+### Is profile flow ko code mein kaise trace karein?
+
+```text
+Employee row click
+  -> components/employees/EmployeeDataGrid.tsx
+  -> router.push(`/employees/${event.data.id}`)
+
+Profile screen
+  -> app/(dashboard)/employees/[id]/page.tsx
+  -> useGetEmployeeByIdQuery(employeeId)
+  -> features/employees/employeesApi.ts
+  -> GET /api/employees/[id]
+  -> server/models/Employee.ts / MongoDB
+
+Profile Save, document upload/delete
+  -> updateEmployee mutation
+  -> PUT /api/employees/[id]
+  -> employee ke profile/job/payroll/documents fields update
+```
+
+Is sequence se samajh aata hai ke tab change karna sirf frontend state change karta hai, jabke `Save Changes`, upload ya delete actual backend API call karke database update karte hain.
+
 ## 20. Error aur loading screens
 
 - [app/loading.tsx](app/loading.tsx): page loading ke waqt `Loading HRMS...` dikhata hai.
@@ -727,3 +849,397 @@ server      = database/auth ke server-side boundaries
 ```
 
 Login, register, MongoDB database connection, password hashing, JWT session cookie aur dashboard route guard implemented hain. Onboarding data persistence, social login aur logout abhi separate modules hain. Ye documentation file project flow samjhati hai; screen behavior code files control karti hain.
+
+## 22. Screen par exactly kya render hota hai: Employees ka complete tree
+
+Is section mein browser se screen tak ka actual render order diya gaya hai. Yahan `children` ka matlab bhi clear kiya gaya hai: parent layout ko jo current route ka page milta hai, woh us ka `children` hota hai.
+
+### `/employees` ka render order
+
+```text
+Browser URL: /employees
+  -> app/layout.tsx
+     -> StoreProvider
+        -> app/(dashboard)/layout.tsx
+           -> Sidebar
+           -> Topbar
+           -> <main>{children}</main>
+              -> app/(dashboard)/employees/page.tsx
+                 -> EmployeePageHeader
+                 -> EmployeeFilterBar
+                 -> EmployeeDataGrid
+                 -> Pagination
+                 -> EmployeeForm, jab Add New click ho
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### 22.1 Root layout aur `children`
+
+#### [app/layout.tsx](app/layout.tsx)
+
+Ye poori application ka sab se outer layout hai. Is file mein `html`, `body`, global CSS aur Redux provider render hote hain:
+
+```tsx
+<StoreProvider>{children}</StoreProvider>
+```
+
+`/employees` open hone par `{children}` ultimately [app/(dashboard)/employees/page.tsx](app/(dashboard)/employees/page.tsx) hota hai. Root layout Employees table khud render nahi karta; ye current route ko common outer wrapper deta hai.
+
+#### [store/provider.tsx](store/provider.tsx)
+
+`StoreProvider` `children` ko Redux `<Provider>` ke andar render karta hai. Is ki wajah se page ke RTK Query hooks Redux store aur cache use kar sakte hain.
+
+#### [store/index.ts](store/index.ts)
+
+Ye Redux store banata hai aur ye employee API parts register karta hai:
+
+```text
+employeesApi.reducer
+employeesApi.middleware
+```
+
+Isi store registration ki wajah se `useGetEmployeesQuery`, `useGetEmployeeFiltersQuery`, `useCreateEmployeeMutation` aur `useUpdateEmployeeMutation` ka request/cache flow chalta hai.
+
+### 22.2 Dashboard layout aur us ka `children`
+
+#### [app/(dashboard)/layout.tsx](app/(dashboard)/layout.tsx)
+
+Dashboard layout root layout se mila hua page `children` receive karta hai:
+
+```tsx
+<Sidebar />
+<div>
+  <Topbar />
+  <main>{children}</main>
+</div>
+```
+
+`/employees` par is layout ka `{children}` [app/(dashboard)/employees/page.tsx](app/(dashboard)/employees/page.tsx) hota hai. Isliye screen par:
+
+```text
+Left side -> components/layout/Sidebar.tsx
+Top bar   -> components/layout/Topbar.tsx
+Main area -> app/(dashboard)/employees/page.tsx
+```
+
+#### [components/layout/Sidebar.tsx](components/layout/Sidebar.tsx)
+
+Ye left navigation render karta hai. Employees item ke links `navItems` array mein defined hain:
+
+```text
+Employees
+  -> /employees
+  -> /employees/directory
+  -> /employees/org-chart
+```
+
+Sidebar employee data fetch nahi karta. Ye `usePathname()` se current URL read karke active item aur expanded submenu decide karta hai.
+
+#### [components/layout/Topbar.tsx](components/layout/Topbar.tsx)
+
+Ye top search field, Documents/News/Payslip/Report links, mail icon, chat icon aur `UserMenu` render karta hai. Employees table ka data Topbar se nahi aata.
+
+### 22.3 Employees page ke children
+
+#### [app/(dashboard)/employees/page.tsx](app/(dashboard)/employees/page.tsx)
+
+Ye Employees screen ka parent/controller hai. Is file mein filters, pagination aur drawer ki local state rakhi jati hai:
+
+```text
+search             -> search input ki current value
+office             -> office filter
+jobTitle           -> job title filter
+status             -> status filter
+page               -> current page number
+limit              -> page size, current value 10
+isEmployeeFormOpen -> Add New drawer open/close
+```
+
+Ye parent ye children render karta hai:
+
+```text
+EmployeesPage
+  -> components/employees/EmployeePageHeader.tsx
+  -> components/employees/EmployeeFilterBar.tsx
+  -> components/employees/EmployeeDataGrid.tsx
+  -> components/ui/Pagination.tsx
+  -> components/forms/EmployeeForm.tsx
+```
+
+#### [components/employees/EmployeePageHeader.tsx](components/employees/EmployeePageHeader.tsx)
+
+Ye `Employees` title, description, Download button aur Add New button dikhata hai. Add New button ka callback parent se aata hai:
+
+```text
+Add New click
+  -> onAddNew()
+  -> setIsEmployeeFormOpen(true)
+  -> EmployeeForm ka isOpen true
+  -> right-side drawer render
+```
+
+#### [components/employees/EmployeeFilterBar.tsx](components/employees/EmployeeFilterBar.tsx)
+
+Ye search, office, job title aur status controls render karta hai. Current values aur callback `EmployeesPage` se props mein aate hain.
+
+Filter options ka complete source:
+
+```text
+EmployeesPage
+  -> useGetEmployeeFiltersQuery()
+  -> features/employees/employeesApi.ts
+  -> GET /api/employees/filters
+  -> app/api/employees/filters/route.ts
+  -> EmployeeModel.distinct("office")
+  -> EmployeeModel.distinct("jobTitle")
+  -> officeOptions/jobTitleOptions
+  -> EmployeeFilterBar
+```
+
+#### [components/employees/EmployeeDataGrid.tsx](components/employees/EmployeeDataGrid.tsx)
+
+Parent page API response ka `data` array is component ko `rows` prop ke through milta hai:
+
+```tsx
+<EmployeeDataGrid rows={data?.data || []} isLoading={isLoading || isFetching} />
+```
+
+Table data ka source:
+
+```text
+useGetEmployeesQuery({ page, limit, search, office, jobTitle, status })
+  -> features/employees/employeesApi.ts
+  -> GET /api/employees?page=...&limit=...&search=...
+  -> app/api/employees/route.ts
+  -> EmployeeModel.find(query)
+  -> { data, totalCount, page, totalPages }
+  -> EmployeesPage
+  -> EmployeeDataGrid rows prop
+```
+
+Grid ke andar additional child/renderers:
+
+```text
+EmployeeNameRenderer
+  -> components/ui/Avatar.tsx
+
+StatusRenderer
+  -> components/ui/StatusBadge.tsx
+
+AccountRenderer
+  -> components/ui/AccountBadge.tsx
+
+ActionsRenderer
+  -> MoreHorizontal icon button
+```
+
+#### [components/ui/Avatar.tsx](components/ui/Avatar.tsx)
+
+Employee ke `avatarUrl` aur `name` props se avatar banta hai:
+
+```text
+avatarUrl available -> next/image se actual image
+avatarUrl missing   -> name ke initials, jaise "PC"
+```
+
+#### [components/ui/Pagination.tsx](components/ui/Pagination.tsx)
+
+`EmployeesPage` API response ke `page` aur `totalPages` ko Pagination ko deta hai. Page click par `setPage()` hota hai, phir query nayi page ke saath dobara run hoti hai.
+
+#### [components/forms/EmployeeForm.tsx](components/forms/EmployeeForm.tsx)
+
+Ye Add New ka right-side drawer hai. Component page JSX mein mounted hota hai, lekin initially `isOpen=false` hone ki wajah se:
+
+```tsx
+if (!isOpen) return null;
+```
+
+Add New click ke baad ye UI render hoti hai:
+
+```text
+fixed background overlay
+  -> right-side <aside>
+     -> Add New Profile heading
+     -> First Name input
+     -> Last Name input
+     -> Email Address input
+     -> Join Date input
+     -> Cancel/Create buttons
+```
+
+Create button ke baad:
+
+```text
+EmployeeForm form state
+  -> useCreateEmployeeMutation()
+  -> features/employees/employeesApi.ts
+  -> POST /api/employees
+  -> app/api/employees/route.ts
+  -> EmployeeModel.create()
+  -> MongoDB employees collection
+  -> Employees cache invalidate
+  -> useGetEmployeesQuery dobara run
+  -> EmployeeDataGrid mein new row
+```
+
+### 22.4 Employee detail screen ka render order
+
+Grid row click par [components/employees/EmployeeDataGrid.tsx](components/employees/EmployeeDataGrid.tsx) ye navigation hoti hai:
+
+```tsx
+router.push(`/employees/${event.data.id}`)
+```
+
+Detail screen ka complete tree:
+
+```text
+app/layout.tsx
+  -> StoreProvider
+     -> app/(dashboard)/layout.tsx
+        -> Sidebar
+        -> Topbar
+        -> main
+           -> app/(dashboard)/employees/[id]/page.tsx
+              -> components/employees/detail/EmployeeDetailPage.tsx
+                 -> EmployeeProfileSidebar.tsx
+                 -> GeneralTab.tsx
+                 -> JobTab.tsx
+                 -> PayrollTab.tsx
+                 -> DocumentsTab.tsx
+                 -> SettingTab.tsx
+                    -> DetailFields.tsx
+```
+
+#### [app/(dashboard)/employees/[id]/page.tsx](app/(dashboard)/employees/[id]/page.tsx)
+
+Ye route page khud detail UI nahi banata. Ye sirf `EmployeeDetailPage` import karke export karta hai:
+
+```text
+/employees/{id}
+  -> EmployeeDetailPage
+```
+
+#### [components/employees/detail/EmployeeDetailPage.tsx](components/employees/detail/EmployeeDetailPage.tsx)
+
+Ye detail page ka main controller hai. Is file mein:
+
+```text
+useParams()                  -> URL se employeeId
+useGetEmployeeByIdQuery()    -> employee detail load
+useUpdateEmployeeMutation()  -> save/upload/delete
+activeTab                    -> current tab
+personalDraft                -> General personal data
+addressDraft                 -> General address data
+emergencyDraft               -> emergency contact data
+jobDraft                     -> Job data
+payrollDraft                 -> Payroll data
+documents                    -> Documents data
+timezoneDraft                -> Setting timezone
+calendarVisibilityDraft     -> Setting privacy
+```
+
+API response aane ke baad `toDetailRecord()` response ko fallback structure ke saath combine karta hai. Phir `useEffect()` in values ko drafts aur visible employee state mein set karta hai.
+
+Tabs URL change nahi karte. `activeTab` state ke basis par relevant child render hota hai:
+
+```text
+activeTab === "General"   -> GeneralTab
+activeTab === "Job"       -> JobTab
+activeTab === "Payroll"   -> PayrollTab
+activeTab === "Documents" -> DocumentsTab
+activeTab === "Setting"   -> SettingTab
+```
+
+#### Detail folder ki files aur responsibility
+
+```text
+components/employees/detail/
+  EmployeeDetailPage.tsx       -> controller, state, tabs, API callbacks
+  EmployeeProfileSidebar.tsx   -> avatar, name, contact, office, manager
+  GeneralTab.tsx               -> Personal Info, Address, Emergency Contact
+  JobTab.tsx                   -> Employment Information, Contract Timeline
+  PayrollTab.tsx               -> Payroll Information, Compensation Breakdown
+  DocumentsTab.tsx             -> Personal Documents, Payslips, upload/delete
+  SettingTab.tsx               -> Timezone aur birthday privacy
+  DetailFields.tsx             -> SectionCard, InfoField, InputField
+  employeeDetail.types.ts      -> EmployeeDetailRecord aur related TypeScript types
+```
+
+### 22.5 Detail data ka API aur database flow
+
+Detail open hone par:
+
+```text
+EmployeeDetailPage
+  -> useParams() se id
+  -> useGetEmployeeByIdQuery(id)
+  -> features/employees/employeesApi.ts
+  -> GET /api/employees/{id}
+  -> app/api/employees/[id]/route.ts
+  -> connectDatabase() in server/db.ts
+  -> EmployeeModel.findById(id)
+  -> server/models/Employee.ts
+  -> MongoDB employees collection
+  -> response data
+  -> EmployeeDetailPage state
+  -> Sidebar + selected tab UI
+```
+
+Save buttons par child tab direct API call nahi karta. Callback parent ko milta hai aur actual call parent se hoti hai:
+
+```text
+GeneralTab / JobTab / PayrollTab / SettingTab
+  -> onSave callback
+  -> EmployeeDetailPage.handleCardSave()
+  -> useUpdateEmployeeMutation()
+  -> features/employees/employeesApi.ts
+  -> PUT /api/employees/{id}
+  -> app/api/employees/[id]/route.ts
+  -> EmployeeModel.findByIdAndUpdate()
+  -> MongoDB
+```
+
+Documents ka upload/delete bhi isi detail route ko use karta hai:
+
+```text
+DocumentsTab file input/button
+  -> EmployeeDetailPage.handleDocumentUpload() / removeDocument()
+  -> FileReader file ko data URL banata hai
+  -> documents array update
+  -> PUT /api/employees/{id}
+  -> EmployeeModel documents field update
+  -> updated documents response
+  -> DocumentsTab ko new documents props
+```
+
+### 22.6 Ek line mein complete screen chain
+
+```text
+Browser URL
+  -> app/layout.tsx ka children
+  -> StoreProvider
+  -> app/(dashboard)/layout.tsx ka children
+  -> Sidebar + Topbar + main
+  -> route page.tsx
+  -> parent page component
+  -> child UI components
+  -> RTK Query hook
+  -> features/*Api.ts
+  -> app/api/**/route.ts
+  -> server/db.ts + server/models/*.ts
+  -> MongoDB
+  -> response wapas component state
+  -> screen par final UI
+```

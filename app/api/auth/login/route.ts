@@ -13,7 +13,7 @@ export async function POST(request: Request) {
 
     if (!email || !password) {
       return NextResponse.json(
-        { success: false, message: "Email aur password zaroori hain." },
+        { success: false, message: "Email and password are required." },
         { status: 400 }
       );
     }
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     const user = await User.findOne({ email });
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return NextResponse.json(
-        { success: false, message: "Email ya password ghalat hai." },
+        { success: false, message: "Invalid email or password." },
         { status: 401 }
       );
     }
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Login failed:", error);
     return NextResponse.json(
-      { success: false, message: "Kuch masla ho gaya, dobara try karein." },
+      { success: false, message: "Something went wrong, please try again." },
       { status: 500 }
     );
   }

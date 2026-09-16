@@ -108,7 +108,7 @@ export default function LoginPage() {
 
           <form className="space-y-5" onSubmit={handleLogin} noValidate>
             {searchParams.get('registered') && (
-              <p className="text-sm text-emerald-600" role="status">Account ban gaya. Ab apni details se login karein.</p>
+              <p className="text-sm text-emerald-600" role="status">Account created successfully. Please login with your credentials.</p>
             )}
             {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
             <div>

@@ -9,7 +9,7 @@ export function StatusBadge({ status, text }: StatusBadgeProps) {
   const normalizedStatus = status.toLowerCase().replace("-", "");
   const label = text ?? status.toUpperCase();
 
-  // Mapping based on screenshot design:
+
   // ACTIVE: green text, light green bg
   // ON BOARDING: yellow text, light yellow bg
   // PROBATION: purple text, light purple bg

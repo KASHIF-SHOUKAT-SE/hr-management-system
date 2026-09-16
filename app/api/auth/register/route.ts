@@ -13,14 +13,14 @@ export async function POST(request: Request) {
 
     if (!name || !email || !password) {
       return NextResponse.json(
-        { success: false, message: "Name, email aur password zaroori hain." },
+        { success: false, message: "Name, email, and password are required." },
         { status: 400 }
       );
     }
 
     if (password.length < 6) {
       return NextResponse.json(
-        { success: false, message: "Password kam az kam 6 characters ka hona chahiye." },
+        { success: false, message: "Password must be at least 6 characters long." },
         { status: 400 }
       );
     }
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     const existingUser = await User.findOne({ email }).lean();
     if (existingUser) {
       return NextResponse.json(
-        { success: false, message: "Ye email pehle se registered hai." },
+        { success: false, message: "An account with this email already exists." },
         { status: 409 }
       );
     }
@@ -37,13 +37,13 @@ export async function POST(request: Request) {
     await User.create({ name, email, password: hashedPassword });
 
     return NextResponse.json(
-      { success: true, message: "Account ban gaya. Ab login karein." },
+      { success: true, message: "Account created successfully. Please login with your credentials." },
       { status: 201 }
     );
   } catch (error) {
     console.error("Registration failed:", error);
     return NextResponse.json(
-      { success: false, message: "Kuch masla ho gaya, dobara try karein." },
+      { success: false, message: "Something went wrong, please try again." },
       { status: 500 }
     );
   }
