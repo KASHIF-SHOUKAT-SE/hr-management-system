@@ -12,17 +12,22 @@ export async function POST(req: Request) {
 
     if (!name || !email || !password) {
       return NextResponse.json(
-        { error: "Name, email, and password are required" },
+        { success: false, message: "Name, email, and password are required." },
         { status: 400 }
       );
     }
 
-    await connectDatabase();
+    if (password.length < 6) {
+      return NextResponse.json(
+        { success: false, message: "Password must be at least 6 characters long." },
+        { status: 400 }
+      );
+    }
 
     const existingUser = await UserModel.findOne({ email });
     if (existingUser) {
       return NextResponse.json(
-        { error: "User with this email already exists" },
+        { success: false, message: "An account with this email already exists." },
         { status: 409 }
       );
     }
@@ -66,7 +71,7 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error("Register Error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { success: false, message: "Something went wrong, please try again." },
       { status: 500 }
     );
   }

@@ -127,6 +127,9 @@ export async function PUT(request: NextRequest, { params }: EmployeeRouteContext
     const updatedEmployee = Object.keys(updateFields).length > 0
       ? await EmployeeModel.findByIdAndUpdate(id, { $set: updateFields }, { new: true, strict: false }).lean()
       : await currentEmployee.save();
+    if (!updatedEmployee) {
+      return NextResponse.json({ error: "Employee not found after update" }, { status: 404 });
+    }
     const updatedEmployeeData = typeof updatedEmployee.toObject === "function"
       ? updatedEmployee.toObject()
       : updatedEmployee;
@@ -142,3 +145,12 @@ export async function PUT(request: NextRequest, { params }: EmployeeRouteContext
 }
 
 export async function DELETE() { return NextResponse.json({ message: "Employee deletion ready for implementation." }, { status: 501 }); }
+
+
+
+
+
+
+
+
+

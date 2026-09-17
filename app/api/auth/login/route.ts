@@ -12,7 +12,7 @@ export async function POST(req: Request) {
 
     if (!email || !password) {
       return NextResponse.json(
-        { error: "Email and password are required" },
+        { success: false, message: "Email and password are required." },
         { status: 400 }
       );
     }
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     const user = await UserModel.findOne({ email });
     if (!user) {
       return NextResponse.json(
-        { error: "Invalid credentials" },
+        { success: false, message: "Invalid email or password." },
         { status: 401 }
       );
     }
@@ -64,7 +64,7 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error("Login Error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { success: false, message: "Something went wrong, please try again." },
       { status: 500 }
     );
   }
