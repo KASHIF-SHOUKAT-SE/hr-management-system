@@ -1,1 +1,3 @@
-export function useModal() { return { isOpen: false, open: () => undefined, close: () => undefined }; }
+export function useModal() {
+  return { isOpen: false, open: () => undefined, close: () => undefined };
+}
