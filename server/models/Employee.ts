@@ -12,60 +12,7 @@ export interface IEmployee extends Document {
   accountStatus: "activated" | "need-invitation";
   joinDate: Date;
   resignDate?: Date;
-  timezone?: string;
-  phoneNumber?: string;
-  calendarVisibility?: "Everyone" | "Only me";
-  documents?: Array<{
-    id: string;
-    name: string;
-    category: "Personal Documents" | "Payslips";
-    url: string;
-  }>;
-  job?: {
-    employeeId?: string;
-    serviceYear?: string;
-    positionType?: string;
-    employmentType?: string;
-    contractNumber?: string;
-    contractName?: string;
-    contractType?: string;
-    effectiveDate?: Date | string;
-    workSchedule?: string;
-  };
-  payroll?: {
-    employmentType?: string;
-    jobTitle?: string;
-    jobDate?: Date | string;
-    geofencing?: string;
-    lastWorkingDate?: Date | string;
-    totalCompensation?: string;
-    salary?: string;
-    recurring?: string;
-    oneOff?: string;
-    offset?: string;
-  };
-  profile?: {
-    gender?: string;
-    dateOfBirth?: Date | string;
-    maritalStatus?: string;
-    nationality?: string;
-    personalTaxId?: string;
-    emailAddress?: string;
-    socialInsurance?: string;
-    healthInsurance?: string;
-    phoneNumber?: string;
-    primaryAddress?: string;
-    country?: string;
-    stateProvince?: string;
-    city?: string;
-    postCode?: string;
-    emergencyContact?: {
-      fullName?: string;
-      relationship?: string;
-      phoneNumber?: string;
-      emailAddress?: string;
-    };
-  };
+  companyId: mongoose.Types.ObjectId;
 }
 
 const EmployeeSchema = new Schema<IEmployee>(
@@ -89,59 +36,10 @@ const EmployeeSchema = new Schema<IEmployee>(
     },
     joinDate: { type: Date, default: Date.now },
     resignDate: { type: Date },
-    timezone: { type: String, default: "GMT +07:00" },
-    phoneNumber: { type: String },
-    calendarVisibility: { type: String, enum: ["Everyone", "Only me"], default: "Everyone" },
-    documents: [{
-      id: { type: String, required: true },
-      name: { type: String, required: true },
-      category: { type: String, enum: ["Personal Documents", "Payslips"], required: true },
-      url: { type: String, required: true },
-    }],
-    job: {
-      employeeId: { type: String },
-      serviceYear: { type: String },
-      positionType: { type: String },
-      employmentType: { type: String },
-      contractNumber: { type: String },
-      contractName: { type: String },
-      contractType: { type: String },
-      effectiveDate: { type: Date },
-      workSchedule: { type: String },
-    },
-    payroll: {
-      employmentType: { type: String },
-      jobTitle: { type: String },
-      jobDate: { type: Date },
-      geofencing: { type: String },
-      lastWorkingDate: { type: Date },
-      totalCompensation: { type: String },
-      salary: { type: String },
-      recurring: { type: String },
-      oneOff: { type: String },
-      offset: { type: String },
-    },
-    profile: {
-      gender: { type: String },
-      dateOfBirth: { type: Date },
-      maritalStatus: { type: String },
-      nationality: { type: String },
-      personalTaxId: { type: String },
-      emailAddress: { type: String },
-      socialInsurance: { type: String },
-      healthInsurance: { type: String },
-      phoneNumber: { type: String },
-      primaryAddress: { type: String },
-      country: { type: String },
-      stateProvince: { type: String },
-      city: { type: String },
-      postCode: { type: String },
-      emergencyContact: {
-        fullName: { type: String },
-        relationship: { type: String },
-        phoneNumber: { type: String },
-        emailAddress: { type: String },
-      },
+    companyId: {
+      type: Schema.Types.ObjectId,
+      ref: "Company",
+      required: true,
     },
   },
   { timestamps: true }

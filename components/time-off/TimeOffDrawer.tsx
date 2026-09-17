@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { X, FileUp, Calendar, Search, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { SelectMenu } from "@/components/ui/SelectMenu";
-import { useCreateLeaveRequestMutation } from "@/features/time-off/timeOffApi";
+import { useCreateLeaveRequestMutation, useGetLeaveTypesQuery } from "@/features/time-off/timeOffApi";
 import { useRouter } from "next/navigation";
 
 export type TimeOffDrawerMode = "view" | "create" | "edit";
@@ -21,6 +21,8 @@ export function TimeOffDrawer({ isOpen, mode, onClose, onEditClick, initialData 
   const router = useRouter();
   const [isRendered, setIsRendered] = useState(false);
   
+  const { data: typesData } = useGetLeaveTypesQuery({ activeOnly: true });
+  
   // Form State
   const [timeOffType, setTimeOffType] = useState("Annual");
   const [dayType, setDayType] = useState<"single" | "multiple">("multiple");
@@ -35,20 +37,25 @@ export function TimeOffDrawer({ isOpen, mode, onClose, onEditClick, initialData 
     if (isOpen) {
       setIsRendered(true);
       document.body.style.overflow = "hidden";
+      if (typesData?.data && typesData.data.length > 0 && !timeOffType) {
+        setTimeOffType(typesData.data[0].name);
+      }
     } else {
       const timer = setTimeout(() => setIsRendered(false), 300);
       document.body.style.overflow = "unset";
       return () => clearTimeout(timer);
     }
-  }, [isOpen]);
+  }, [isOpen, typesData, timeOffType]);
 
   if (!isRendered && !isOpen) return null;
 
-  const typeOptions = [
-    { label: "Annual", value: "Annual" },
-    { label: "Sick Leave", value: "Sick Leave" },
-    { label: "Engagement", value: "Engagement" },
-  ];
+  const typeOptions = typesData?.data?.length 
+    ? typesData.data.map(t => ({ label: t.name, value: t.name }))
+    : [
+        { label: "Annual", value: "Annual" },
+        { label: "Sick Leave", value: "Sick Leave" },
+        { label: "Engagement", value: "Engagement" },
+      ];
 
   const handleSubmit = async () => {
     try {
@@ -74,7 +81,7 @@ export function TimeOffDrawer({ isOpen, mode, onClose, onEditClick, initialData 
 
       onClose();
       // Redirect to team time off page to show the new request
-      router.push("/leaves/team");
+      router.push("/leaves/employee");
     } catch (error) {
       console.error("Failed to create request:", error);
     }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDatabase } from "@/server/db";
 import { TimeOffRequest } from "@/server/models/TimeOffRequest";
+import { LeaveType } from "@/server/models/LeaveType";
 
 // Static data for leave balances
 const leaveBalances = [
@@ -39,6 +40,11 @@ export async function GET(request: NextRequest) {
   }
 
   if (section === "types") {
+    const activeLeaveTypes = await LeaveType.find({ isActive: true }).lean();
+    if (activeLeaveTypes.length > 0) {
+      return NextResponse.json({ types: activeLeaveTypes.map(t => t.name) });
+    }
+    // Fallback to static if db is empty (for testing/setup)
     const uniqueTypes = [...new Set(leaveBalances.map((b) => b.type))];
     return NextResponse.json({ types: uniqueTypes });
   }
@@ -75,6 +81,17 @@ export async function POST(request: NextRequest) {
   try {
     await connectDatabase();
     const body = await request.json();
+
+    // Verify if the requested leave type is active
+    if (body.type) {
+      const leaveType = await LeaveType.findOne({ name: body.type });
+      // We only strictly reject if we found it and it's explicitly inactive.
+      // If not found, we might allow it (to not break legacy static types during testing),
+      // but ideally we should reject. We will reject if explicitly inactive.
+      if (leaveType && !leaveType.isActive) {
+        return NextResponse.json({ error: `Leave type '${body.type}' is currently inactive.` }, { status: 400 });
+      }
+    }
 
     // In a real app, employee info would come from the auth session.
     // Here we just mock it for the new request.

@@ -123,4 +123,9 @@ export async function POST(request: NextRequest) {
     console.error("Failed to create employee:", error);
     return NextResponse.json({ error: "Failed to create employee" }, { status: 500 });
   }
+export async function POST() {
+  return Response.json(
+    { message: "Employee creation ready for implementation." },
+    { status: 501 }
+  );
 }
