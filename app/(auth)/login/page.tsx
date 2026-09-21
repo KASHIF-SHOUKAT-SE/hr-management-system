@@ -66,6 +66,7 @@ export default function LoginPage() {
             alt="Team collaborating"
             fill
             sizes="(max-width: 1024px) 100vw, 50vw"
+            loading="eager"
             unoptimized
             className="object-cover"
           />

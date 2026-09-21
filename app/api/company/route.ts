@@ -38,6 +38,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    if (user.companyId) {
+      return NextResponse.json(
+        { error: "User already belongs to a company" },
+        { status: 409 }
+      );
+    }
+
     // Create Company
     const newCompany = await CompanyModel.create({
       name: companyName,
@@ -94,6 +101,14 @@ export async function POST(req: Request) {
     return response;
   } catch (error) {
     console.error("Company Creation Error:", error);
+
+    if (error instanceof Error && "code" in error && error.code === 11000) {
+      return NextResponse.json(
+        { error: "A company with this domain or employee email already exists" },
+        { status: 409 }
+      );
+    }
+
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
